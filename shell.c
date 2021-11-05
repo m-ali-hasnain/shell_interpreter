@@ -16,9 +16,13 @@ int execute(char**); //this function will execute command, command and args will
 void runShell(); //this function will run shell, and perform its tasks
 
 
+char **lastEnteredCommands;
+int lcIndex = 0;
+
 //Main function, this will call runShell() method and starts execution of it.
 int main(int argc, char **argv){
 
+    lastEnteredCommands  = malloc(sizeof(char)*1024);
     runShell();
     return 0;
 }
@@ -111,6 +115,10 @@ char** parseArgs(char *line){
 }
 
 int execute(char** args){
+    int fd[2];
+    if(pipe(fd)==-1){
+        fprintf(stderr, "Failed to create pipe");
+    }
     pid_t waitPID;
     pid_t childProcess = fork();
     int status;
@@ -119,15 +127,50 @@ int execute(char** args){
         exit(EXIT_FAILURE);
     }
     else if(childProcess == 0){
+        //child process
         char* command = args[0];
-        //Child Process
+        close(fd[0]);
+        if(strcmp(command, "tree")==0){
+            //printf("Executing Tree command\n");
+            write(fd[1], "tree", sizeof(char)*strlen("tree"));
+            args[0] = "./scripts/tree.sh";
+        }
+        else if(strcmp(command, "list")==0){
+            //printf("Executing List command\n");
+            write(fd[1], "list", sizeof(char)*strlen("list"));     
+            args[0] = "./scripts/list.sh";
+        }
+        else if(strcmp(command, "path")==0){
+            //printf("Executing Path command\n");
+            write(fd[1], "path", sizeof(char)*strlen("path"));
+            args[0] = "./scripts/path.sh";
+            
+            
+        }
+        else if(strcmp(command, "exit")==0){
+            //printf("Executing Exit command\n");
+            for(int i=lcIndex-1; i>=0; i--){
+                printf("%s\n", lastEnteredCommands[i]);
+            }
+            args[0] = "./scripts/exit.sh";
+        }
         execvp(args[0], args);
+
+        //Child Process
+        
     }
     else{
         //Main proces
+        
         do {
         waitPID = waitpid(childProcess, &status, WUNTRACED);
         } while(!WIFEXITED(status) && !WIFSIGNALED(status));
+
+        char* commandPerformed;
+        commandPerformed = malloc(sizeof(char)*255);
+        read(fd[0], commandPerformed, sizeof(commandPerformed));
+        lastEnteredCommands[lcIndex] = commandPerformed;
+        lcIndex+=1;
     }
     return 1;
 }
