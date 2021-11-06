@@ -22,7 +22,15 @@ int lcIndex = 0;
 //Main function, this will call runShell() method and starts execution of it.
 int main(int argc, char **argv){
 
-    lastEnteredCommands  = malloc(sizeof(char)*1024);
+
+    lastEnteredCommands  = malloc(sizeof(char)*1024);//creating buffer for storing commands history
+    
+    //configuring shell
+    char* line = "./scripts/config.sh";
+    char** args = parseArgs(line);
+    execute(args);
+
+    //running shell
     runShell();
     return 0;
 }
