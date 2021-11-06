@@ -60,7 +60,11 @@ char* readLine(){
     }
     while(1){
         character = getchar();
-        if(character == EOF || character == '\n'){
+        if (character == 10){
+            line[index] = '\0';
+            return line;
+        }
+        else if(character == EOF || character == '\n'){
             line[index] = '\0';
             return line;
         }
@@ -154,8 +158,9 @@ int execute(char** args){
             }
             args[0] = "./scripts/exit.sh";
         }
+        
         execvp(args[0], args);
-
+    
         //Child Process
         
     }
@@ -164,9 +169,14 @@ int execute(char** args){
         
         do {
         waitPID = waitpid(childProcess, &status, WUNTRACED);
+            if(status == 256){
+                exit(0);
+            }
         } while(!WIFEXITED(status) && !WIFSIGNALED(status));
 
+        //this code will keep track of last performed commands
         char* commandPerformed;
+        close(fd[1]);
         commandPerformed = malloc(sizeof(char)*255);
         read(fd[0], commandPerformed, sizeof(commandPerformed));
         lastEnteredCommands[lcIndex] = commandPerformed;
